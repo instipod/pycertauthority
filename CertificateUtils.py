@@ -62,6 +62,7 @@ class CertificateUtils():
         """
         with open(path, "wb") as f:
             f.write(certificate.public_bytes(serialization.Encoding.PEM))
+            f.flush()
 
     @staticmethod
     def write_private_key_to_file(path, private_key, password=None):
@@ -84,3 +85,4 @@ class CertificateUtils():
                     encryption_algorithm=algo
                 )
             )
+            f.flush()

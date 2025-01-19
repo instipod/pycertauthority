@@ -9,3 +9,6 @@ __pycache__/
 *.key
 *.csr
 *.pem
+*.p7c
+*.p12
+*.pfx

@@ -54,6 +54,28 @@ class CertificateUtils():
         return private_key
 
     @staticmethod
+    def read_certificate_request_from_file(path: str) -> x509.CertificateSigningRequest:
+        """
+        Loads a PEM certificate signing request from file.
+        :param path: File path to the certificate request.
+        :return: CertificateSigningRequest
+        """
+        with open(path, "rb") as f:
+            request = x509.load_pem_x509_csr(f.read(), default_backend())
+        return request
+
+    @staticmethod
+    def write_certificate_request_to_file(path: str, certificate_request: x509.CertificateSigningRequest):
+        """
+        Writes a certificate signing request to a PEM-formatted file.
+        :param path: File path to the certificate request.
+        :param certificate_request: Certificate Signing Request to Write
+        """
+        with open(path, "wb") as f:
+            f.write(certificate_request.public_bytes(serialization.Encoding.PEM))
+            f.flush()
+
+    @staticmethod
     def write_certificate_to_file(path: str, certificate: x509.Certificate):
         """
         Writes a certificate object to a PEM-formatted file.

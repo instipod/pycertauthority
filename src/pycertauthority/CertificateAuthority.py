@@ -42,6 +42,15 @@ class CertificateAuthority():
         self.standard_nc_extensions = []
         self.standard_c_extensions = []
 
+    def load_private_key(self, private_key, key_exportable: bool = True):
+        """
+        Loads a CA private key after the CertificateAuthority has already been loaded.
+        :param private_key: Private key of the CA
+        :param key_exportable: Permit exporting of the CA private key, default True
+        """
+        self.ca_private_key = private_key
+        self.key_exportable = key_exportable
+
     def get_ca_certificate(self) -> x509.Certificate:
         """
         Returns the CA certificate.
@@ -183,11 +192,32 @@ class CertificateAuthority():
         :param extensions: List of additional extensions to add to this CA certificate only
         :return: CertificateAuthority
         """
-        if self.ca_private_key is None:
-            raise PrivateKeyUnavailableError()
-
         if private_key is None:
             private_key = CertificateUtils.generate_rsa_private_key(private_key_size)
+        request = CertificateUtils.generate_certificate_request(private_key, subject)
+        ca = self.create_intermediate_ca_with_request(request, subject, serial_number, basic_constraints,
+                                                        not_valid_before, not_valid_after, hash_algo, extensions)
+        ca.load_private_key(private_key, key_exportable)
+        return ca
+
+    def create_intermediate_ca_with_request(self, request: x509.CertificateSigningRequest, subject: x509.Name,
+                               serial_number: int = None, basic_constraints: x509.BasicConstraints = None,
+                               not_valid_before: datetime.datetime = None, not_valid_after: datetime.datetime = None,
+                               hash_algo: HashAlgorithm = hashes.SHA256(), extensions: list = []):
+        """
+        Creates a new intermediate certificate authority under this authority.
+        :param request: CertificateSigningRequest for the new CA certificate
+        :param subject: Subject of the new CA
+        :param serial_number: Serial number of new CA certificate
+        :param basic_constraints: Basic constraints of the new CA, default CA:True
+        :param not_valid_before: Not Valid Before time of the new CA, default -1 minute
+        :param not_valid_after: Not Valid After time of the new CA, default not_before + 720d
+        :param hash_algo: Hashing algorithm to use on this CA certificate, default SHA256
+        :param extensions: List of additional extensions to add to this CA certificate only
+        :return: CertificateAuthority
+        """
+        if self.ca_private_key is None:
+            raise PrivateKeyUnavailableError()
 
         if basic_constraints is None:
             # If no constraints specified, assume certificate authority with unlimited length
@@ -203,7 +233,6 @@ class CertificateAuthority():
         if not_valid_after is None:
             not_valid_after = datetime.datetime.utcnow() + datetime.timedelta(days=730, minutes=-1)
 
-        request = CertificateUtils.generate_certificate_request(private_key, subject)
         key_usage = x509.KeyUsage(
             digital_signature=False,
             content_commitment=False,
@@ -222,8 +251,7 @@ class CertificateAuthority():
                                         serial_number=serial_number, basic_constraints=basic_constraints,
                                         ext_key_usage=ext_key_usage, not_valid_before=not_valid_before,
                                         not_valid_after=not_valid_after, hash_algo=hash_algo, extensions=extensions)
-        return CertificateAuthority(certificate, issuer_certificate=self, ca_private_key=private_key,
-                                    key_exportable=key_exportable)
+        return CertificateAuthority(certificate, issuer_certificate=self, key_exportable=False)
 
     def sign_request(self, certificate_request: x509.CertificateSigningRequest, subject: x509.Name = None,
                      subject_alternative_names: list = None, key_usage: x509.KeyUsage = None,

@@ -3,8 +3,7 @@ from cryptography import x509
 from cryptography.hazmat._oid import NameOID
 from CertificateAuthority import CertificateAuthorityFactory
 from CertificateUtils import CertificateUtils
-from CertificateExtensions import CertificateExtensions
-
+from CertificateExtensions import CertificateExtensions, CertificatePolicyItem
 
 # Create a root CA
 subject = x509.Name([
@@ -31,7 +30,10 @@ intermediate_ca.add_standard_extension(aia, False)
 subject3 = x509.Name([
     x509.NameAttribute(NameOID.COMMON_NAME, "www.example.com")
 ])
+policies = CertificateExtensions.create_certificate_policies_extension([
+    CertificatePolicyItem("1.1.1", "https://www.example.com", "Hello world")
+])
 private_key = CertificateUtils.generate_rsa_private_key()
 request = CertificateUtils.generate_certificate_request(private_key, subject3)
-certificate = intermediate_ca.sign_request(request)
+certificate = intermediate_ca.sign_request(request, extensions=[policies])
 CertificateUtils.write_certificate_to_file("../cert.crt", certificate)

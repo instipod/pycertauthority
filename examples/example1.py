@@ -1,9 +1,9 @@
 #!python3
 from cryptography import x509
 from cryptography.hazmat._oid import NameOID
-from CertificateAuthority import CertificateAuthorityFactory
-from CertificateUtils import CertificateUtils
-from CertificateExtensions import CertificateExtensions, CertificatePolicyItem
+from pycertauthority.CertificateAuthority import CertificateAuthorityFactory
+from pycertauthority.CertificateUtils import CertificateUtils
+from pycertauthority.CertificateExtensions import CertificateExtensions, CertificatePolicyItem
 
 # Create a root CA
 subject = x509.Name([

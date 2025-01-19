@@ -211,16 +211,20 @@ class CertificateAuthority():
             encipher_only=False,
             decipher_only=False,
         )
+        ext_key_usage = x509.ExtendedKeyUsage([
+            x509.oid.ExtendedKeyUsageOID.ANY_EXTENDED_KEY_USAGE
+        ])
         certificate = self.sign_request(request, subject, subject_alternative_names=[], key_usage=key_usage,
                                         serial_number=serial_number, basic_constraints=basic_constraints,
-                                        not_valid_before=not_valid_before, not_valid_after=not_valid_after)
+                                        ext_key_usage=ext_key_usage, not_valid_before=not_valid_before,
+                                        not_valid_after=not_valid_after)
         return CertificateAuthority(certificate, issuer_certificate=self, ca_private_key=private_key,
                                     key_exportable=key_exportable)
 
     def sign_request(self, certificate_request: x509.CertificateSigningRequest, subject: x509.Name = None,
                      subject_alternative_names: list = None, key_usage: x509.KeyUsage = None,
                      serial_number: int = None, basic_constraints: x509.BasicConstraints = None,
-                     not_valid_before: datetime.datetime = None,
+                     ext_key_usage: x509.ExtendedKeyUsage = None, not_valid_before: datetime.datetime = None,
                      not_valid_after: datetime.datetime = None) -> x509.Certificate:
         """
         Signs a provided certificate request.  Used to create a new leaf certificate.
@@ -231,6 +235,7 @@ class CertificateAuthority():
         :param key_usage: Key usage permitted, default Digital signature only
         :param serial_number: Serial number of the certificate, default random
         :param basic_constraints: Basic constraints of the certificate, default CA:False
+        :param ext_key_usage: Extended key usage of the certificate, default SERVER_AUTH and CLIENT_AUTH
         :param not_valid_before: Not Valid Before time of the new certificate, default -1 minute
         :param not_valid_after: Not Valid After time of the new certificate, default not_before + 365d
         :return: Certificate
@@ -279,7 +284,7 @@ class CertificateAuthority():
             key_usage = x509.KeyUsage(
                 digital_signature=True,
                 content_commitment=False,
-                key_encipherment=False,
+                key_encipherment=True,
                 data_encipherment=False,
                 key_agreement=False,
                 key_cert_sign=False,
@@ -287,6 +292,11 @@ class CertificateAuthority():
                 encipher_only=False,
                 decipher_only=False,
             )
+        if ext_key_usage is None:
+            ext_key_usage = x509.ExtendedKeyUsage([
+                x509.oid.ExtendedKeyUsageOID.SERVER_AUTH,
+                x509.oid.ExtendedKeyUsageOID.CLIENT_AUTH
+            ])
 
         # Create the certificate builder
         builder = x509.CertificateBuilder()
@@ -299,6 +309,7 @@ class CertificateAuthority():
 
         # Add extensions
         builder = builder.add_extension(basic_constraints, critical=True)
+        builder = builder.add_extension(ext_key_usage, critical=True)
         builder = builder.add_extension(key_usage, critical=True)
 
         if len(subject_alternative_names) > 0:
@@ -376,6 +387,10 @@ class CertificateAuthorityFactory():
 
         basic_constraints = x509.BasicConstraints(ca=True, path_length=None)
         builder = builder.add_extension(basic_constraints, critical=True)
+        ext_key_usage = x509.ExtendedKeyUsage([
+            x509.oid.ExtendedKeyUsageOID.ANY_EXTENDED_KEY_USAGE
+        ])
+        builder = builder.add_extension(ext_key_usage, critical=True)
         builder = builder.add_extension(key_usage, critical=True)
         ski = x509.SubjectKeyIdentifier.from_public_key(private_key.public_key())
         builder = builder.add_extension(ski, critical=False)

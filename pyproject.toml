@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pycertauthority"
+version = "0.0.1"
+authors = [
+  { name="Michael Kelly", email="instipod@instipod.com" },
+]
+description = "A simple wrapper around the cryptography library that provides an easier interface to create and manage certificates and certificate authorities using Python 3."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Topic :: Security",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
+]
+license = { text = "GPL-3.0-only" }
+
+[project.urls]
+Homepage = "https://github.com/instipod/pycertauthority"
+Issues = "https://github.com/instipod/pycertauthority/issues"

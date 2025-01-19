@@ -2,6 +2,7 @@ import pytz
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.x509.oid import NameOID
 import datetime
 from .CertificateUtils import CertificateUtils
@@ -166,7 +167,8 @@ class CertificateAuthority():
     def create_intermediate_ca(self, subject: x509.Name, private_key=None, private_key_size: int = 2048,
                                serial_number: int = None, basic_constraints: x509.BasicConstraints = None,
                                not_valid_before: datetime.datetime = None, not_valid_after: datetime.datetime = None,
-                               key_exportable: bool = True, extensions: list = []):
+                               key_exportable: bool = True, hash_algo: HashAlgorithm = hashes.SHA256(),
+                               extensions: list = []):
         """
         Creates a new intermediate certificate authority under this authority.
         :param subject: Subject of the new CA
@@ -177,6 +179,7 @@ class CertificateAuthority():
         :param not_valid_before: Not Valid Before time of the new CA, default -1 minute
         :param not_valid_after: Not Valid After time of the new CA, default not_before + 720d
         :param key_exportable: Permit exporting of the CA private key, default True
+        :param hash_algo: Hashing algorithm to use on this CA certificate, default SHA256
         :param extensions: List of additional extensions to add to this CA certificate only
         :return: CertificateAuthority
         """
@@ -218,7 +221,7 @@ class CertificateAuthority():
         certificate = self.sign_request(request, subject, subject_alternative_names=[], key_usage=key_usage,
                                         serial_number=serial_number, basic_constraints=basic_constraints,
                                         ext_key_usage=ext_key_usage, not_valid_before=not_valid_before,
-                                        not_valid_after=not_valid_after, extensions=extensions)
+                                        not_valid_after=not_valid_after, hash_algo=hash_algo, extensions=extensions)
         return CertificateAuthority(certificate, issuer_certificate=self, ca_private_key=private_key,
                                     key_exportable=key_exportable)
 
@@ -226,7 +229,8 @@ class CertificateAuthority():
                      subject_alternative_names: list = None, key_usage: x509.KeyUsage = None,
                      serial_number: int = None, basic_constraints: x509.BasicConstraints = None,
                      ext_key_usage: x509.ExtendedKeyUsage = None, not_valid_before: datetime.datetime = None,
-                     not_valid_after: datetime.datetime = None, extensions: list = []) -> x509.Certificate:
+                     not_valid_after: datetime.datetime = None, hash_algo: HashAlgorithm = hashes.SHA256(),
+                     extensions: list = []) -> x509.Certificate:
         """
         Signs a provided certificate request.  Used to create a new leaf certificate.
         Optionally, override the subject, subject alternative names, and key_usage.
@@ -239,6 +243,7 @@ class CertificateAuthority():
         :param ext_key_usage: Extended key usage of the certificate, default SERVER_AUTH and CLIENT_AUTH
         :param not_valid_before: Not Valid Before time of the new certificate, default -1 minute
         :param not_valid_after: Not Valid After time of the new certificate, default not_before + 365d
+        :param hash_algo: Hashing algorithm to use on the certificate, default SHA256
         :param extensions: List of extensions to add to this certificate only
         :return: Certificate
         """
@@ -258,10 +263,10 @@ class CertificateAuthority():
             serial_number = x509.random_serial_number()
 
         if not_valid_before is None:
-            not_valid_before = datetime.datetime.utcnow() + datetime.timedelta(minutes=-1)
+            not_valid_before = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=-1)
 
         if not_valid_after is None:
-            not_valid_after = datetime.datetime.utcnow() + datetime.timedelta(days=365, minutes=-1)
+            not_valid_after = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=365, minutes=-1)
 
         if not_valid_before.tzinfo is None:
             not_valid_before = pytz.UTC.localize(not_valid_before)
@@ -347,6 +352,7 @@ class CertificateAuthorityFactory():
     def create_self_signed_ca(subject: x509.Name, private_key=None, private_key_size: int = 2048,
                               serial_number: int = None, not_valid_before: datetime.datetime = None,
                               not_valid_after: datetime.datetime = None,
+                              hash_algo: HashAlgorithm = hashes.SHA256(),
                               key_exportable: bool = True) -> CertificateAuthority:
         """
         Creates a new self-signed certificate authority.
@@ -356,6 +362,7 @@ class CertificateAuthorityFactory():
         :param serial_number: Serial number for the new certificate, default generates random
         :param not_valid_before: Not Valid Before date for new certificate, default now - 1 minute
         :param not_valid_after: Not Valid After date for the new certificate, default not_before + 3650 days
+        :param hash_algo: Hashing algorithm to use in the certificate, default SHA256
         :param key_exportable: If the key export methods should be available, default True
         :return: CertificateAuthority
         """
@@ -402,6 +409,6 @@ class CertificateAuthorityFactory():
         builder = builder.add_extension(ski, critical=False)
 
         certificate = builder.sign(
-            private_key=private_key, algorithm=hashes.SHA256(), backend=default_backend()
+            private_key=private_key, algorithm=hash_algo, backend=default_backend()
         )
         return CertificateAuthority(certificate, ca_private_key=private_key, key_exportable=key_exportable)

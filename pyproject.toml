@@ -11,6 +11,10 @@ authors = [
 description = "A simple wrapper around the cryptography library that provides an easier interface to create and manage certificates and certificate authorities using Python 3."
 readme = "README.md"
 requires-python = ">=3.8"
+dependencies = [
+    "cryptography",
+    "pytz",
+]
 classifiers = [
     "Topic :: Security",
     "Operating System :: OS Independent",

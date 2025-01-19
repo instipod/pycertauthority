@@ -4,7 +4,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.x509.oid import NameOID
 import datetime
-from pycertauthority.CertificateUtils import CertificateUtils
+from .CertificateUtils import CertificateUtils
 
 
 # Custom exceptions

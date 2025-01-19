@@ -309,7 +309,7 @@ class CertificateAuthority():
 
         # Add extensions
         builder = builder.add_extension(basic_constraints, critical=True)
-        builder = builder.add_extension(ext_key_usage, critical=True)
+        builder = builder.add_extension(ext_key_usage, critical=False)
         builder = builder.add_extension(key_usage, critical=True)
 
         if len(subject_alternative_names) > 0:
@@ -390,7 +390,7 @@ class CertificateAuthorityFactory():
         ext_key_usage = x509.ExtendedKeyUsage([
             x509.oid.ExtendedKeyUsageOID.ANY_EXTENDED_KEY_USAGE
         ])
-        builder = builder.add_extension(ext_key_usage, critical=True)
+        builder = builder.add_extension(ext_key_usage, critical=False)
         builder = builder.add_extension(key_usage, critical=True)
         ski = x509.SubjectKeyIdentifier.from_public_key(private_key.public_key())
         builder = builder.add_extension(ski, critical=False)
